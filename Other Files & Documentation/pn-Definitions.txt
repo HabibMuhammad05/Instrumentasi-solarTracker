@@ -1,0 +1,42 @@
+//=====================ARDUINO NANO===========================//
+
+SoftwareSerial espSerial(8, 7); // RX, TX
+
+
+panServo.attach(9);
+
+tiltServo.attach(10)
+
+;
+
+const byte treePins[] = {2, 4, 5, 6};      
+
+const byte PJU1 = 3;
+
+const byte PJU2 = 11;
+
+
+
+const int LDR_TR = A2, LDR_TL = A3, LDR_BR = A1, LDR_BL = A0;
+
+
+const int panelCurPin = A7;
+
+const uint8_t panelVoltPin = A6;
+
+const uint8_t battVoltPin = A4;
+
+const byte tempSensorPin = A5;
+
+
+
+
+
+//===================ESP8266 WEMOS D1========================//
+
+SoftwareSerial nanoSerial(13, 15); // d7 RX, d8 TX
+
+
+
+U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
+
