@@ -21,7 +21,7 @@ void outputSetup() {
     pinMode(treePins[i], OUTPUT);
     digitalWrite(treePins[i], LOW);
     ledState[i] = false;
-    nextTime[i] = millis() + random(100, 500);
+    nextTime[i] = millis() + random(100, 400);
   }
 }
 
@@ -44,7 +44,7 @@ void fadeLED(byte pin, bool turnOn) {
     if (brightness[pin] < 0)   brightness[pin] = 0;
     analogWrite(pin, brightness[pin]);
     lampDimmingval = brightness[pin];
-    nextTime[pin] = now + 5;   
+    nextTime[pin] = now + 10;   
   }
 }
 

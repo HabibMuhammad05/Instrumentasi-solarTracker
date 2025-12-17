@@ -2,128 +2,109 @@
 #include <ESP8266HTTPClient.h>
 #include <ArduinoJson.h>
 
-WiFiClient sendClient;
+WiFiClient client;
 
 
-void startWifi(){
-  DEBUG_PRINTLN();
-  DEBUG_PRINTLN("Connecting to WiFi...");
-  WiFi.begin(ssid, password);
+// ================= KONFIGURASI WIFI & SERVER =================
+//const char* ssid = "NAMA_WIFI_ANDA";       // Ganti dengan nama WiFi
+//const char* password = "PASSWORD_WIFI";    // Ganti dengan password WiFi
 
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    DEBUG_PRINT(".");
-  }
+// Ganti dengan IP Address Laptop/PC tempat server.js berjalan
+// Cara cek IP di Windows: Buka CMD -> ketik "ipconfig" -> lihat IPv4 Address
+const char* serverIp = "192.168.175.225";      
+const int serverPort = 3000;
 
-  DEBUG_PRINTLN("");
-  DEBUG_PRINT("Connected! IP ESP: ");
-  DEBUG_PRINTLN(WiFi.localIP());
-}
+// URL Endpoint sesuai server.js
+String apiUrlUpdate = "http://" + String(serverIp) + ":" + String(serverPort) + "/api/iot/update";
+String apiUrlStatus = "http://" + String(serverIp) + ":" + String(serverPort) + "/api/iot/status";
 
 
-enum SendState {
-  SEND_IDLE,
-  SEND_CONNECTING,
-  SEND_SENDING,
-  SEND_WAIT_RESPONSE
-};
+// ================= FUNGSI KIRIM DATA (POST) =================
+void sendTelemetryData() {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin(client, apiUrlUpdate);   // ESP8266 FIX
+    http.addHeader("Content-Type", "application/json");
 
-SendState sendState = SEND_IDLE;
-unsigned long sendTimeout = 0;
+    // Buat JSON Object menggunakan ArduinoJson
+    StaticJsonDocument<512> doc;
 
-String postData = "";
+    // Masukkan data sesuai kunci di server.js (req.body)
+    doc["panel_voltage"] = rx.panelVoltage;
+    doc["panel_current"] = rx.panelCurrent;
+    doc["panel_power"] = rx.panelPower;
+    doc["panel_temp"] = rx.panelTemperature; // Contoh statis (bisa pakai DHT11)
+    
+    doc["battery_voltage"] = rx.batteryVoltage;
+    doc["battery_percent"] = rx.batteryPercent;
+    doc["charge_status"] = rx.chargeStatus;
 
-void startSendData() {
-  DEBUG_PRINTLN("");
-  DEBUG_PRINTLN("[SEND] Preparing JSON data...");
+    doc["lamp_power"] = rx.lampPower;
+    doc["lamp_dimmer"] = rx.lampDimmer;
+    
+    doc["max_ldr"] = rx.maxLDR; // Contoh nilai LDR
+    doc["rssi_signal"] = WiFi.RSSI();
+    doc["event_code"] = rx.eventCode; // 0 = Normal
 
-  // prepare JSON
-  StaticJsonDocument<200> doc;
-  doc["pv_voltage"]    = rx.panelVoltage;
-  doc["pv_current"]    = rx.panelCurrent;
-  doc["pv_power"]      = rx.panelPower;
-  doc["battery_power"] = rx.batteryPercent;
-  doc["lamp_power"]    = rx.lampPower;
-  doc["lamp_dimmer"]   = rx.lampDimmer;
-  doc["rssi_signal"]   = WiFi.RSSI();
-  doc["ldr_value"]     = rx.maxLDR;
-  doc["panel_temp"]    = rx.panelTemperature;
-  doc["azimuth"]       = rx.panDegreeRead;
-  doc["elevation"]     = rx.tiltDegreeRead;
+    doc["pan_degree"] = rx.panDegreeRead; // Posisi servo saat ini
+    doc["tilt_degree"] = rx.tiltDegreeRead;
 
-  serializeJson(doc, postData);
+    // Serialize JSON ke String
+    String requestBody;
+    serializeJson(doc, requestBody);
 
-//  DEBUG_PRINT("[SEND] JSON size: ");
-//  DEBUG_PRINTLN(postData.length());
-//  DEBUG_PRINTLN("[SEND] JSON content:");
-//  DEBUG_PRINTLN(postData);
+    // Kirim POST Request
+    int httpResponseCode = http.POST(requestBody);
 
-  sendState = SEND_CONNECTING;
-  sendTimeout = millis();
-}
-
-void sendDataNonBlocking() {
-  switch (sendState) {
-
-    case SEND_IDLE:
-      return;  // nothing to do
-
-    // ---------------------------------------------------------
-    case SEND_CONNECTING:
-      DEBUG_PRINTLN("[SEND] Connecting to server...");
-      
-      if (sendClient.connect(serverName, 80)) {
-        DEBUG_PRINTLN("[SEND] Connected to server!");
-        sendState = SEND_SENDING;
-      } 
-      else if (millis() - sendTimeout > 1500) {
-        DEBUG_PRINTLN("[SEND] ERROR: Connection timeout");
-        sendState = SEND_IDLE;
-      }
-      break;
-
-    // ---------------------------------------------------------
-    case SEND_SENDING: {
-      DEBUG_PRINTLN("[SEND] Sending POST request...");
-
-      String request =
-        "POST / HTTP/1.1\r\n"
-        "Host: " + String(serverName) + "\r\n"
-        "Content-Type: application/json\r\n"
-        "Content-Length: " + String(postData.length()) + "\r\n"
-        "Connection: close\r\n"
-        "\r\n" +
-        postData;
-
-      sendClient.print(request);
-
-      DEBUG_PRINTLN("[SEND] POST sent!");
-
-      sendTimeout = millis();
-      sendState = SEND_WAIT_RESPONSE;
-      break;
+    if (httpResponseCode > 0) {
+      String response = http.getString();
+      DEBUG_PRINT("[POST] Sukses: ");
+      DEBUG_PRINT(httpResponseCode);
+      DEBUG_PRINTLN(response); // Respon dari server: {"status":"ok", "msg":"Data Saved"}
+    } else {
+      DEBUG_PRINT("[POST] Gagal, Error code: ");
+      DEBUG_PRINTLN(httpResponseCode);
     }
+    http.end();
+  } else {
+    DEBUG_PRINTLN("WiFi Terputus!");
+  }
+}
 
-    // ---------------------------------------------------------
-    case SEND_WAIT_RESPONSE:
-      if (sendClient.available()) {
-        DEBUG_PRINTLN("[SEND] Response received:");
+// ================= FUNGSI TERIMA KONTROL (GET) =================
+void getControlStatus() {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin(client, apiUrlStatus);   // ESP8266 FIX
+    
+    int httpCode = http.GET();
+    
+    if (httpCode > 0) {
+      String payload = http.getString();
+      
+      // Parse JSON dari server
+      StaticJsonDocument<256> doc;
+      DeserializationError error = deserializeJson(doc, payload);
 
-        while (sendClient.available()) {
-          char c = sendClient.read();
-          DEBUG_PRINT(c);
+      if (!error) {
+        const char* mode = doc["mode"]; // "AUTO" atau "MANUAL"
+        float targetAzimuth = doc["target_azimuth"];
+        float targetElevation = doc["target_elevation"];
+
+//        Serial.print("[GET] Mode: ");
+//        Serial.print(mode);
+//        Serial.print(" | Target Pan: ");
+//        Serial.println(targetAzimuth);
+
+        // LOGIKA KONTROL DISINI
+        if (strcmp(mode, "MANUAL") == 0) {
+            // Gerakkan Servo ke targetAzimuth & targetElevation
+            // servoPan.write(targetAzimuth);
+        } else {
+            // Jalankan algoritma solar tracker otomatis
         }
-
-        DEBUG_PRINTLN("\n[SEND] Closing connection.");
-        sendClient.stop();
-        sendState = SEND_IDLE;
       }
-
-      if (millis() - sendTimeout > 3000) {
-        DEBUG_PRINTLN("[SEND] ERROR: Response timeout.");
-        sendClient.stop();
-        sendState = SEND_IDLE;
-      }
-      break;
+    }
+    http.end();
   }
 }

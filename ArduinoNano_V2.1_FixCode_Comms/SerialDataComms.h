@@ -1,40 +1,7 @@
 #include <SoftwareSerial.h>
 SoftwareSerial espSerial(8, 7); // RX, TX
 
-struct TelemetryPacket {
-  float panelVoltage;
-  float panelCurrent;
-  float panelPower;
-  float batteryPercent;
-  float lampPower;
-  uint8_t lampDimmer;
-  float maxLDR;
-  float panelTemperature;
-  int16_t panDegreeRead;
-  int16_t tiltDegreeRead;
 
-  float batteryVoltage;
-  uint8_t chargeStatus;
-  uint8_t PJU1State;
-  uint8_t PJU2State;
-  uint8_t treeState;
-
-  uint8_t eventCode;
-} __attribute__((packed));
-
-TelemetryPacket tx;
-
-struct ControlPacket {
-  int16_t panManual;
-  int16_t tiltManual;
-
-  uint8_t overrideStat = false;
-  uint8_t PJU1Control;
-  uint8_t PJU2Control;
-  uint8_t treeControl;
-} __attribute__((packed));
-
-ControlPacket rx;
 
 
 void startSerial(){
@@ -129,24 +96,24 @@ void serialWrite(){
     
     DEBUG_PRINTLN("\n==== TELEMETRY SENT TO ESP ====");
 
-    DEBUG_PRINT("panelVoltage      : "); DEBUG_PRINTLN(tx.panelVoltage, 4);
-    DEBUG_PRINT("panelCurrent      : "); DEBUG_PRINTLN(tx.panelCurrent, 4);
-    DEBUG_PRINT("panelPower        : "); DEBUG_PRINTLN(tx.panelPower, 4);
-    DEBUG_PRINT("batteryPercent    : "); DEBUG_PRINTLN(tx.batteryPercent, 2);
-    DEBUG_PRINT("lampPower         : "); DEBUG_PRINTLN(tx.lampPower, 2);
-    DEBUG_PRINT("lampDimmer        : "); DEBUG_PRINTLN(tx.lampDimmer);
-    DEBUG_PRINT("maxLDR            : "); DEBUG_PRINTLN(tx.maxLDR, 2);
-    DEBUG_PRINT("panelTemperature  : "); DEBUG_PRINTLN(tx.panelTemperature, 2);
-    DEBUG_PRINT("panDegreeRead     : "); DEBUG_PRINTLN(tx.panDegreeRead);
-    DEBUG_PRINT("tiltDegreeRead    : "); DEBUG_PRINTLN(tx.tiltDegreeRead);
-  
-    DEBUG_PRINT("batteryVoltage    : "); DEBUG_PRINTLN(tx.batteryVoltage, 4);
-    DEBUG_PRINT("chargeStatus      : "); DEBUG_PRINTLN(tx.chargeStatus);
-    DEBUG_PRINT("PJU1State         : "); DEBUG_PRINTLN(tx.PJU1State);
-    DEBUG_PRINT("PJU2State         : "); DEBUG_PRINTLN(tx.PJU2State);
-    DEBUG_PRINT("treeState         : "); DEBUG_PRINTLN(tx.treeState);
-  
-    DEBUG_PRINT("eventCode         : "); DEBUG_PRINTLN(tx.eventCode);
+//    DEBUG_PRINT("panelVoltage      : "); DEBUG_PRINTLN(tx.panelVoltage, 4);
+//    DEBUG_PRINT("panelCurrent      : "); DEBUG_PRINTLN(tx.panelCurrent, 4);
+//    DEBUG_PRINT("panelPower        : "); DEBUG_PRINTLN(tx.panelPower, 4);
+//    DEBUG_PRINT("batteryPercent    : "); DEBUG_PRINTLN(tx.batteryPercent, 2);
+//    DEBUG_PRINT("lampPower         : "); DEBUG_PRINTLN(tx.lampPower, 2);
+//    DEBUG_PRINT("lampDimmer        : "); DEBUG_PRINTLN(tx.lampDimmer);
+//    DEBUG_PRINT("maxLDR            : "); DEBUG_PRINTLN(tx.maxLDR, 2);
+//    DEBUG_PRINT("panelTemperature  : "); DEBUG_PRINTLN(tx.panelTemperature, 2);
+//    DEBUG_PRINT("panDegreeRead     : "); DEBUG_PRINTLN(tx.panDegreeRead);
+//    DEBUG_PRINT("tiltDegreeRead    : "); DEBUG_PRINTLN(tx.tiltDegreeRead);
+//  
+//    DEBUG_PRINT("batteryVoltage    : "); DEBUG_PRINTLN(tx.batteryVoltage, 4);
+//    DEBUG_PRINT("chargeStatus      : "); DEBUG_PRINTLN(tx.chargeStatus);
+//    DEBUG_PRINT("PJU1State         : "); DEBUG_PRINTLN(tx.PJU1State);
+//    DEBUG_PRINT("PJU2State         : "); DEBUG_PRINTLN(tx.PJU2State);
+//    DEBUG_PRINT("treeState         : "); DEBUG_PRINTLN(tx.treeState);
+//  
+//    DEBUG_PRINT("eventCode         : "); DEBUG_PRINTLN(tx.eventCode);
   
     DEBUG_PRINTLN("=========================================");
   
@@ -166,7 +133,13 @@ void serialDataRead(){
     DEBUG_PRINT("PJU1Control : "); DEBUG_PRINTLN(rx.PJU1Control);
     DEBUG_PRINT("PJU2Control : "); DEBUG_PRINTLN(rx.PJU2Control);
     DEBUG_PRINT("treeControl : "); DEBUG_PRINTLN(rx.treeControl);
+    
+    DEBUG_PRINT("overrideStatUpdate: "); DEBUG_PRINTLN(rx.overrideStatUpdated);
   
+    PJU1Stat = rx.PJU1Control;  
+    PJU2Stat = rx.PJU2Control;  
+    treeEffect = rx.treeControl; 
+
     DEBUG_PRINTLN("=========================================");
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
   }

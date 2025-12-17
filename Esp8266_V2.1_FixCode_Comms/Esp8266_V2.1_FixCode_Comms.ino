@@ -7,6 +7,7 @@
   #define DEBUG_PRINT(...) Serial.print(__VA_ARGS__)
   #define DEBUG_PRINTLN(...) Serial.println(__VA_ARGS__)
   #define DEBUG_BEGIN(baud) Serial.begin(baud)
+  #define BLYNK_PRINT Serial
 #else
   #define DEBUG_PRINT(...)    // Do nothing
   #define DEBUG_PRINTLN(...)  // Do nothing
@@ -23,24 +24,32 @@ void setup() {
   DEBUG_BEGIN(9600);
   StartSerial();
   oledBegin();
-  blynkSetup();
+  handleWiFi();
+//  blynkSetup();
 //  startWifi();
   
   pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void loop() {
+  handleWiFi();
   SerialReadData();
   serialWrite();
   oledDataUpdate();
-  sendDataNonBlocking();
+//  sendDataNonBlocking();
+  Blynk.run();
 
 
   if (millis() - lastSendTime >= 2000) {
     lastSendTime = millis();
-//    sendData();
-    startSendData();
-
     blynkSend();
+
+    sendTelemetryData();
+    getControlStatus();
+    
   }
 }
+
+
+//    sendData();
+//    startSendData();

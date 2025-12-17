@@ -11,6 +11,7 @@
   #define DEBUG_BEGIN(baud)   // Do nothing
 #endif
 
+#include "GlobalVariables.h"
 #include "SolarTracker.h"
 #include "VoltCurrent.h"
 #include "LampControl.h"
@@ -26,18 +27,22 @@ void setup() {
 }
 
 void loop() {
-  if(!rx.overrideStat) updateSolarTracker();
+  if(rx.overrideStatUpdated) updateSolarTracker();
+  else trackerManual(); 
+  
   fadeLED(PJU1, PJU1Stat);
   fadeLED(PJU2, PJU2Stat);
   updateTreeEffect();
   serialDataRead();
   
-  if (millis() - lastPrintTime >= 500) {
+  if (millis() - lastPrintTime >= 1000) {
     panelCurrent();
     panelVoltage();
     batteryVoltage();
     readLM35();
     serialWrite();
+    if(rx.overrideStat) DEBUG_PRINTLN("AUTO MODE");
+    else DEBUG_PRINTLN("MANUAL MODE");
     lastPrintTime = millis();
   }
 }

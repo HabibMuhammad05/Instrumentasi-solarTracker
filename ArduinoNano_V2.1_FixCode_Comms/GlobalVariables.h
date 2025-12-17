@@ -19,13 +19,13 @@ struct TelemetryPacket {
   uint8_t eventCode;
 } __attribute__((packed));
 
-TelemetryPacket rx;
-  
+TelemetryPacket tx;
+
 struct ControlPacket {
   int16_t panManual;
   int16_t tiltManual;
 
-  uint8_t overrideStat = true;
+  uint8_t overrideStat = false;
   uint8_t PJU1Control;
   uint8_t PJU2Control;
   uint8_t treeControl;
@@ -33,18 +33,4 @@ struct ControlPacket {
   uint8_t overrideStatUpdated = false;
 } __attribute__((packed));
 
-ControlPacket tx;
-
-unsigned long lastSend = 0;
-
-
-//===============================JSON DATA SEND/READ================================//
-bool wifiConnect = false;
-const char* ssid = "JWS ";
-const char* password = "12345678";
-String serverName = "http://192.168.175.225:3000/api/iot/update";
-unsigned long lastSendTime = 0;
-
-
-unsigned long wifiLastTry = 0;
-const unsigned long WIFI_RETRY_INTERVAL = 5000;
+ControlPacket rx;

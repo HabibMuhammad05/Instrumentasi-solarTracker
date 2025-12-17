@@ -70,13 +70,18 @@ void updateSolarTracker() {
     panServo.write(panPos);
   }
 
-  /*Debug
+//  /*Debug
   DEBUG_PRINT("Pan: "); DEBUG_PRINT(panPos);
   DEBUG_PRINT("  Tilt: "); DEBUG_PRINT(tiltPos);
   DEBUG_PRINT(" | TL "); DEBUG_PRINT(TL);
   DEBUG_PRINT(" TR "); DEBUG_PRINT(TR);
   DEBUG_PRINT(" BL "); DEBUG_PRINT(BL);
   DEBUG_PRINT(" BR "); DEBUG_PRINTLN(BR);
- */
+// */
 
+}
+
+void trackerManual(){
+  tiltServo.write(rx.tiltManual);
+  panServo.write(rx.panManual);
 }

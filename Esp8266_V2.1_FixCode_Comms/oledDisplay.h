@@ -2,8 +2,10 @@
 #include <U8g2lib.h>
 
 #include <Wire.h>
+U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 
-U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
+//U8G2_SH1106_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
+//U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 
 static const unsigned char image_battery_charging_bits[] U8X8_PROGMEM = {0x00,0x40,0x00,0xf0,0x27,0x7f,0x08,0x30,0x80,0x08,0x10,0x80,0x0e,0x18,0x80,0x01,0x0c,0x80,0x01,0xfc,0x81,0x01,0xfe,0x80,0x01,0xc0,0x80,0x01,0x60,0x80,0x0e,0x20,0x80,0x08,0x30,0x80,0x08,0x10,0x80,0xf0,0xcb,0x7f,0x00,0x08,0x00,0x00,0x00,0x00};
 static const unsigned char image_battery_empty_bits[] U8X8_PROGMEM = {0x00,0x00,0x00,0xf0,0xff,0x7f,0x08,0x00,0x80,0x08,0x00,0x80,0x0e,0x00,0x80,0x01,0x00,0x80,0x01,0x00,0x80,0x01,0x00,0x80,0x01,0x00,0x80,0x01,0x00,0x80,0x0e,0x00,0x80,0x08,0x00,0x80,0x08,0x00,0x80,0xf0,0xff,0x7f,0x00,0x00,0x00,0x00,0x00,0x00};
@@ -14,6 +16,7 @@ static const unsigned char main_overlay[] U8X8_PROGMEM = {0x00,0x00,0x00,0x28,0x
 static const unsigned char image_wifi_bits[] U8X8_PROGMEM = {0x80,0x0f,0x00,0x60,0x30,0x00,0x18,0xc0,0x00,0x84,0x0f,0x01,0x62,0x30,0x02,0x11,0x40,0x04,0x08,0x87,0x00,0xc4,0x18,0x01,0x20,0x20,0x00,0x10,0x42,0x00,0x80,0x0d,0x00,0x40,0x10,0x00,0x00,0x02,0x00,0x00,0x05,0x00,0x00,0x02,0x00,0x00,0x00,0x00};
 
 void oledBegin(){
+  u8g2.setI2CAddress(0x78);
   u8g2.begin();
 }
 
@@ -22,18 +25,18 @@ void oledDataUpdate() {
     u8g2.setFontMode(1);
     u8g2.setBitmapMode(1);
     u8g2.drawXBMP(0, 0, 128, 63, main_overlay);                                 // main overlay
-    if(rx.chargeStatus) u8g2.drawXBMP(1, 3, 24, 16, rx.chargeStatus ? image_battery_charging_bits : image_battery_empty_bits); //charge indicator
+    u8g2.drawXBMP(1, 3, 24, 16, rx.chargeStatus ? image_battery_charging_bits : image_battery_empty_bits); //charge indicator
     u8g2.drawXBMP(31, 4, 19, 16, image_wifi_bits);                              //internet state
     if(!wifiConnect) u8g2.drawLine(32, 3, 47, 18);                              // jika wifi tidak connect                         
     u8g2.drawXBMP(56, 2, 11, 16, image_hour_glass_75_bits);                     //loading
-    u8g2.drawXBMP(74, 7, 13, 16, rx.PJU1State ? image_lamp_on_bits : image_lamp_off_bits);     
-    u8g2.drawXBMP(94, 7, 13, 16, rx.PJU2State ? image_lamp_on_bits : image_lamp_off_bits);
-    u8g2.drawXBMP(114, 7, 13, 16, rx.treeState ? image_lamp_on_bits : image_lamp_off_bits);
+    u8g2.drawXBMP(74, 7, 13, 16, tx.PJU1Control ? image_lamp_on_bits : image_lamp_off_bits);     
+    u8g2.drawXBMP(94, 7, 13, 16, tx.PJU2Control ? image_lamp_on_bits : image_lamp_off_bits);
+    u8g2.drawXBMP(114, 7, 13, 16, tx.treeControl ? image_lamp_on_bits : image_lamp_off_bits);
     
     u8g2.setFont(u8g2_font_4x6_tr);
     u8g2.drawStr(21, 42, String(rx.panDegreeRead).c_str());
     u8g2.drawStr(21, 50, String(rx.tiltDegreeRead).c_str());
-    u8g2.drawStr(21, 58, tx.overrideStat ? "MAN" : "OTO");
+    u8g2.drawStr(21, 58, tx.overrideStat ? "OTO" : "MAN");
     u8g2.setFont(u8g2_font_t0_11b_tr);
     u8g2.drawStr(67, 43, String(rx.panelVoltage, 1).c_str());
     u8g2.drawStr(67, 52, String(rx.panelCurrent, 0).c_str());
